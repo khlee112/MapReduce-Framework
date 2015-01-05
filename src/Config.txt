@@ -1,0 +1,4 @@
+ghc51.ghc.andrew.cmu.edu 5100 2 Mapper
+ghc52.ghc.andrew.cmu.edu 5200 1 Mapper
+ghc53.ghc.andrew.cmu.edu 5300 1 Reducer
+ghc54.ghc.andrew.cmu.edu 5400 1 Reducer

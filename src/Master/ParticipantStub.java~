@@ -1,0 +1,103 @@
+package Master;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+
+import Messages.Message;
+import Messages.MessageConnectionInit;
+import Participant.ParticipantInfo;
+
+/**
+ * Class representing a mapperStub or a reducerStub. Handle connections to
+ * participants
+ * 
+ * */
+public class ParticipantStub {
+
+	private ParticipantInfo participantInfo;
+	public Socket toParticipant;
+	public ObjectOutputStream pObjectOS;
+	public ObjectInputStream pObjectIS;
+	public RunnableMasterRead comm;
+	public Master master;
+
+	public ParticipantStub(String host, int port, int cpuCount,
+			int participantID) {
+		this.participantInfo = new ParticipantInfo(host, port, cpuCount,
+				participantID);
+	}
+
+	public void connectToParticipant() {
+		try {
+
+			toParticipant = new Socket(participantInfo.host,
+					participantInfo.port);
+
+			// Get I/O stream
+			pObjectOS = new ObjectOutputStream(toParticipant.getOutputStream());
+			pObjectOS.flush();
+			pObjectIS = new ObjectInputStream(toParticipant.getInputStream());
+
+			// master sending connection initializer to participant
+			MessageConnectionInit message = new MessageConnectionInit(-1,
+					master.job.jobID);
+			pObjectOS.writeObject(message);
+
+			// start reader runner thread
+			comm = new RunnableMasterRead(master, toParticipant, pObjectIS);
+			Thread readingThread = new Thread(comm);
+			readingThread.start();
+
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+	}
+
+	public void sendToParticipant(Message message) {
+		try {
+			if (toParticipant.isConnected())
+				pObjectOS.writeObject(message);
+			
+		} catch (Exception e) {
+			try {
+			      toParticipant.close();
+			} catch (IOException e1){
+			
+			}
+			//e.printStackTrace();
+		}
+	}
+
+	public void stopReadingThread() {
+		comm.stop();
+		// System.out.println("Stopping connection to: " + getID());
+		try {
+			if (!toParticipant.isClosed())
+				toParticipant.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public ParticipantInfo getParticipantInfo() {
+		return participantInfo;
+	}
+
+	public int getID() {
+		return participantInfo.id;
+	}
+
+	public String getHost() {
+		return participantInfo.host;
+	}
+
+	public int getPort() {
+		return participantInfo.port;
+	}
+
+	public int getCPUCount() {
+		return participantInfo.cpuCount;
+	}
+}
